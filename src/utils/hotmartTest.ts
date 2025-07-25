@@ -7,6 +7,36 @@ import { HOTMART_CONFIG, validateHotmartConfig } from '../config/hotmart';
 // 🔧 FUNÇÃO PARA TESTAR CONFIGURAÇÃO
 export const debugEnvironmentVariables = (): void => {
   console.log('🔧 Debug das variáveis de ambiente:');
+  
+  // Mostrar TODAS as variáveis de ambiente disponíveis
+  console.log('📋 Todas as variáveis disponíveis:', Object.keys(import.meta.env));
+  
+  // Filtrar variáveis relacionadas à Hotmart
+  const hotmartVars = Object.keys(import.meta.env).filter(key => 
+    key.toLowerCase().includes('hotmart') || 
+    key.toLowerCase().includes('client') ||
+    key.toLowerCase().includes('token') ||
+    key.toLowerCase().includes('product') ||
+    key.toLowerCase().includes('your_')
+  );
+  
+  console.log('🔍 Variáveis relacionadas à Hotmart:', hotmartVars);
+  
+  // Mostrar valores (primeiros caracteres apenas)
+  const envValues: Record<string, string> = {};
+  hotmartVars.forEach(key => {
+    const value = import.meta.env[key];
+    if (value) {
+      envValues[key] = key.toLowerCase().includes('secret') || key.toLowerCase().includes('token') 
+        ? '***CONFIGURADO***' 
+        : `${value.substring(0, 8)}...`;
+    } else {
+      envValues[key] = 'VAZIO';
+    }
+  });
+  
+  console.log('💾 Valores das variáveis:', envValues);
+  
   console.log({
     // Mostra apenas se existem, não os valores
     CLIENT_ID_exists: !!HOTMART_CONFIG.CLIENT_ID,
@@ -24,13 +54,28 @@ export const debugEnvironmentVariables = (): void => {
     
     // Valores específicos dos secrets (primeiros caracteres apenas)
     secrets_preview: {
+      // Testar múltiplas variações
+      VITE_HOTMART_CLIENT_ID: import.meta.env.VITE_HOTMART_CLIENT_ID ? 
+        import.meta.env.VITE_HOTMART_CLIENT_ID.substring(0, 8) + '...' : 'não encontrado',
       VITE_YOUR_HOTMART_CLIENT_ID: import.meta.env.VITE_YOUR_HOTMART_CLIENT_ID ? 
         import.meta.env.VITE_YOUR_HOTMART_CLIENT_ID.substring(0, 8) + '...' : 'não encontrado',
+      YOUR_HOTMART_CLIENT_ID: import.meta.env.YOUR_HOTMART_CLIENT_ID ? 
+        import.meta.env.YOUR_HOTMART_CLIENT_ID.substring(0, 8) + '...' : 'não encontrado',
+      VITE_HOTMART_CLIENT_SECRET: import.meta.env.VITE_HOTMART_CLIENT_SECRET ? 
+        '***configurado***' : 'não encontrado',
       VITE_YOUR_HOTMART_CLIENT_SECRET: import.meta.env.VITE_YOUR_HOTMART_CLIENT_SECRET ? 
+        '***configurado***' : 'não encontrado',
+      YOUR_HOTMART_CLIENT_SECRET: import.meta.env.YOUR_HOTMART_CLIENT_SECRET ? 
+        '***configurado***' : 'não encontrado',
+      VITE_HOTMART_BASIC_TOKEN: import.meta.env.VITE_HOTMART_BASIC_TOKEN ? 
         '***configurado***' : 'não encontrado',
       VITE_YOUR_HOTMART_BASIC_TOKEN: import.meta.env.VITE_YOUR_HOTMART_BASIC_TOKEN ? 
         '***configurado***' : 'não encontrado',
-      VITE_YOUR_PRODUCT_ID: import.meta.env.VITE_YOUR_PRODUCT_ID || 'não configurado'
+      YOUR_HOTMART_BASIC_TOKEN: import.meta.env.YOUR_HOTMART_BASIC_TOKEN ? 
+        '***configurado***' : 'não encontrado',
+      VITE_PRODUCT_ID: import.meta.env.VITE_PRODUCT_ID || 'não configurado',
+      VITE_YOUR_PRODUCT_ID: import.meta.env.VITE_YOUR_PRODUCT_ID || 'não configurado',
+      YOUR_PRODUCT_ID: import.meta.env.YOUR_PRODUCT_ID || 'não configurado'
     }
   });
 };
