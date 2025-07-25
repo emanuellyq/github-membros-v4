@@ -4,6 +4,7 @@ import { BonusResource, BonusLesson, QuizQuestion } from '../types';
 import { bonusResources } from '../data/bonusData';
 import { OnboardingVideo, PopupContent, getOnboardingVideos, getPopupContents, saveOnboardingVideos, savePopupContents } from '../data/onboardingData';
 import { testHotmartConfig, testEmailSearch, runAllTests } from '../utils/hotmartTest';
+import { debugEnvironmentVariables } from '../config/hotmart';
 
 interface AdminPanelProps {
   isVisible: boolean;
@@ -1261,28 +1262,43 @@ function HotmartTestManagement() {
       <div className="space-y-6">
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <h4 className="font-semibold mb-4">Teste de Configuração</h4>
-          <button
-            onClick={handleConfigTest}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Testar Configuração
-          </button>
+          <div className="space-y-3">
+            <button
+              onClick={() => {
+                console.log('🔧 Testando configuração da Hotmart...');
+                testHotmartConfig();
+              }}
+              className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Testar Configuração
+            </button>
+            
+            <button
+              onClick={() => {
+                console.log('🔧 Debug das variáveis de ambiente...');
+                debugEnvironmentVariables();
+              }}
+              className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Debug Variáveis de Ambiente
+            </button>
+          </div>
         </div>
 
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <h4 className="font-semibold mb-4">Teste de Busca por Email</h4>
-          <div className="flex space-x-3 mb-4">
+          <div className="space-y-2">
             <input
               type="email"
               value={testEmail}
               onChange={(e) => setTestEmail(e.target.value)}
               placeholder="Digite um email para testar"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <button
               onClick={handleEmailTest}
               disabled={isLoading}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+              className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
             >
               {isLoading ? 'Testando...' : 'Testar Email'}
             </button>
