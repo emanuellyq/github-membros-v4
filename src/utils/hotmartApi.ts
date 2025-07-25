@@ -1,3 +1,5 @@
+import { HOTMART_CONFIG, ACCEPTED_STATUSES, validateHotmartConfig, getDefaultHeaders } from '../config/hotmart';
+
 // 🔧 CONFIGURAÇÃO DA API DA HOTMART
 // Este arquivo contém as funções para integração com a Hotmart
 
@@ -40,24 +42,20 @@ interface HotmartPurchase {
   };
 }
 
-// 🔧 SUBSTITUA ESTAS CONFIGURAÇÕES PELAS SUAS CREDENCIAIS DA HOTMART
-const HOTMART_CONFIG = {
-  CLIENT_ID: 'your_hotmart_client_id',
-  CLIENT_SECRET: 'your_hotmart_client_secret',
-  BASIC_TOKEN: 'your_hotmart_basic_token',
-  PRODUCT_ID: 'your_product_id',
-  API_BASE_URL: 'https://developers.hotmart.com/payments/api/v1/sales/history'
-};
-
 // 🔧 FUNÇÃO PARA OBTER TOKEN DE ACESSO DA HOTMART
 const getHotmartAccessToken = async (): Promise<string | null> => {
   try {
-    const response = await fetch(`${HOTMART_CONFIG.API_BASE_URL}/security/oauth/token`, {
+    // Validar configuração antes de fazer a requisição
+    if (!validateHotmartConfig()) {
+      console.error('Hotmart configuration is invalid');
+      return null;
+    }
+
+    console.log('Requesting Hotmart access token...');
+    
+    const response = await fetch(`${HOTMART_CONFIG.OAUTH_URL}/security/oauth/token`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${HOTMART_CONFIG.BASIC_TOKEN}`
-      },
+      headers: getDefaultHeaders(),
       body: JSON.stringify({
         grant_type: 'client_credentials',
         client_id: HOTMART_CONFIG.CLIENT_ID,
@@ -66,10 +64,13 @@ const getHotmartAccessToken = async (): Promise<string | null> => {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to get access token');
+      const errorText = await response.text();
+      console.error('Token request failed:', response.status, errorText);
+      throw new Error(`Failed to get access token: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log('Access token obtained successfully');
     return data.access_token;
   } catch (error) {
     console.error('Error getting Hotmart access token:', error);
@@ -77,40 +78,110 @@ const getHotmartAccessToken = async (): Promise<string | null> => {
   }
 };
 
-// 🔧 FUNÇÃO PARA BUSCAR COMPRAS POR EMAIL (COMPRADORES EXISTENTES)
-const searchPurchasesByEmail = async (email: string): Promise<HotmartPurchase[]> => {
+// 🔧 FUNÇÃO PARA BUSCAR TODAS AS COMPRAS APROVADAS
+const searchApprovedPurchases = async (page: number = 1): Promise<{ purchases: HotmartPurchase[], hasMore: boolean }> => {
   try {
     const accessToken = await getHotmartAccessToken();
     if (!accessToken) {
       throw new Error('Unable to get access token');
     }
 
-    // Buscar compras por email usando a API de Sales History
-    const response = await fetch(`${HOTMART_CONFIG.API_BASE_URL}/payments/api/v1/sales/history`, {
+    console.log(`Fetching approved purchases from Hotmart (page ${page})...`);
+    
+    // Construir URL com parâmetros
+    const params = new URLSearchParams({
+      transaction_status: HOTMART_CONFIG.DEFAULT_TRANSACTION_STATUS,
+      max_results: HOTMART_CONFIG.MAX_RESULTS_PER_PAGE.toString(),
+      page: page.toString()
+    });
+    
+    // Adicionar product_id se especificado
+    if (HOTMART_CONFIG.PRODUCT_ID) {
+      params.append('product_id', HOTMART_CONFIG.PRODUCT_ID);
+    }
+    
+    const url = `${HOTMART_CONFIG.API_BASE_URL}/payments/api/v1/sales/history?${params.toString()}`;
+    console.log('Request URL:', url);
+    
+    const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      // Parâmetros de busca
-      // Note: A API da Hotmart pode ter limitações na busca por email específico
-      // Você pode precisar buscar todas as vendas e filtrar localmente
+      headers: getDefaultHeaders(accessToken)
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch sales history');
+      const errorText = await response.text();
+      console.error('Hotmart API Error:', response.status, errorText);
+      throw new Error(`Failed to fetch sales history: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log(`Hotmart API Response (page ${page}):`, {
+      totalItems: data.items?.length || 0,
+      hasNextPage: data.page_info?.has_next_page || false
+    });
     
-    // Filtrar compras pelo email e produto específico
-    const purchases = data.items?.filter((purchase: any) => 
-      purchase.buyer.email.toLowerCase() === email.toLowerCase() &&
-      purchase.product.id === HOTMART_CONFIG.PRODUCT_ID &&
-      purchase.purchase.status === 'APPROVED'
-    ) || [];
+    const purchases = data.items || [];
+    const hasMore = data.page_info?.has_next_page || false;
+    
+    console.log(`Found ${purchases.length} purchases on page ${page}`);
 
-    return purchases;
+    return { purchases, hasMore };
+  } catch (error) {
+    console.error('Error fetching approved purchases:', error);
+    return { purchases: [], hasMore: false };
+  }
+};
+
+// 🔧 FUNÇÃO PARA BUSCAR COMPRAS POR EMAIL (FILTRANDO LOCALMENTE)
+const searchPurchasesByEmail = async (email: string): Promise<HotmartPurchase[]> => {
+  try {
+    console.log(`Searching for purchases for email: ${email}`);
+    
+    let allPurchases: any[] = [];
+    let page = 1;
+    let hasMore = true;
+    
+    // Buscar todas as páginas de compras aprovadas
+    while (hasMore && page <= 10) { // Limite de 10 páginas para evitar loops infinitos
+      const result = await searchApprovedPurchases(page);
+      allPurchases = allPurchases.concat(result.purchases);
+      hasMore = result.hasMore;
+      page++;
+      
+      // Delay entre requisições para evitar rate limiting
+      if (hasMore) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+    
+    console.log(`Total purchases fetched: ${allPurchases.length}`);
+    
+    // Filtrar por email e produto específico (se configurado)
+    const userPurchases = allPurchases.filter((purchase: any) => {
+      const emailMatch = purchase.buyer?.email?.toLowerCase() === email.toLowerCase();
+      
+      // Verificar produto (se especificado)
+      const productMatch = !HOTMART_CONFIG.PRODUCT_ID || 
+        purchase.product?.id === HOTMART_CONFIG.PRODUCT_ID ||
+        purchase.product?.ucode === HOTMART_CONFIG.PRODUCT_ID;
+      
+      // Verificar status (múltiplas possibilidades)
+      const status = purchase.transaction?.status || purchase.purchase?.status || purchase.status;
+      const statusMatch = ACCEPTED_STATUSES.includes(status);
+      
+      console.log(`Purchase check for ${purchase.buyer?.email}:`, {
+        emailMatch,
+        productMatch,
+        statusMatch,
+        status,
+        productId: purchase.product?.id || purchase.product?.ucode
+      });
+      
+      return emailMatch && productMatch && statusMatch;
+    });
+    
+    console.log(`Found ${userPurchases.length} purchases for email: ${email}`);
+    return userPurchases;
   } catch (error) {
     console.error('Error searching purchases by email:', error);
     return [];
@@ -352,7 +423,7 @@ export const syncHistoricalPurchases = async (): Promise<void> => {
     let hasMorePages = true;
     
     while (hasMorePages) {
-      const response = await fetch(`${HOTMART_CONFIG.API_BASE_URL}/payments/api/v1/sales/history?product_id=${HOTMART_CONFIG.PRODUCT_ID}&page=${page}&max_results=50`, {
+      const response = await fetch(`${HOTMART_CONFIG.API_BASE_URL}/payments/api/v1/sales/history?transaction_status=APPROVED&page=${page}&max_results=50`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -368,13 +439,13 @@ export const syncHistoricalPurchases = async (): Promise<void> => {
       
       // Salvar cada compra no banco de dados
       for (const purchase of data.items || []) {
-        if (purchase.purchase.status === 'APPROVED') {
+        if (purchase.transaction?.status === 'APPROVED' || purchase.purchase?.status === 'APPROVED') {
           await savePurchaseToDatabase({
             email: purchase.buyer.email,
             name: purchase.buyer.name,
             product_id: purchase.product.id,
-            status: purchase.purchase.status,
-            approved_date: purchase.purchase.approved_date
+            status: purchase.transaction?.status || purchase.purchase?.status,
+            approved_date: purchase.transaction?.approved_date || purchase.purchase?.approved_date
           });
         }
       }
