@@ -2,13 +2,27 @@
 // Configure suas credenciais aqui ou use variáveis de ambiente
 
 export const HOTMART_CONFIG = {
-  // 🔧 CREDENCIAIS DA HOTMART - Configure com suas credenciais reais
-  CLIENT_ID: import.meta.env.VITE_HOTMART_CLIENT_ID || 'your_hotmart_client_id',
-  CLIENT_SECRET: import.meta.env.VITE_HOTMART_CLIENT_SECRET || 'your_hotmart_client_secret',
-  BASIC_TOKEN: import.meta.env.VITE_HOTMART_BASIC_TOKEN || 'your_hotmart_basic_token',
+  // 🔧 CREDENCIAIS DA HOTMART - Usa GitHub Secrets ou variáveis locais
+  CLIENT_ID: import.meta.env.VITE_HOTMART_CLIENT_ID || 
+             import.meta.env.YOUR_HOTMART_CLIENT_ID || 
+             process.env.YOUR_HOTMART_CLIENT_ID || 
+             '',
+             
+  CLIENT_SECRET: import.meta.env.VITE_HOTMART_CLIENT_SECRET || 
+                 import.meta.env.YOUR_HOTMART_CLIENT_SECRET || 
+                 process.env.YOUR_HOTMART_CLIENT_SECRET || 
+                 '',
+                 
+  BASIC_TOKEN: import.meta.env.VITE_HOTMART_BASIC_TOKEN || 
+               import.meta.env.YOUR_HOTMART_BASIC_TOKEN || 
+               process.env.YOUR_HOTMART_BASIC_TOKEN || 
+               '',
   
-  // 🔧 ID DO SEU PRODUTO (opcional - se não especificado, aceita qualquer produto)
-  PRODUCT_ID: import.meta.env.VITE_HOTMART_PRODUCT_ID || '',
+  // 🔧 ID DO SEU PRODUTO
+  PRODUCT_ID: import.meta.env.VITE_PRODUCT_ID || 
+              import.meta.env.YOUR_PRODUCT_ID || 
+              process.env.YOUR_PRODUCT_ID || 
+              '',
   
   // 🔧 URLs DA API
   API_BASE_URL: 'https://developers.hotmart.com',
@@ -32,8 +46,15 @@ export const validateHotmartConfig = (): boolean => {
   
   for (const field of requiredFields) {
     const value = HOTMART_CONFIG[field as keyof typeof HOTMART_CONFIG];
-    if (!value || value.startsWith('your_hotmart_')) {
+    if (!value || value === '') {
       console.error(`Hotmart configuration missing: ${field}`);
+      console.log('Available env vars:', {
+        VITE_HOTMART_CLIENT_ID: !!import.meta.env.VITE_HOTMART_CLIENT_ID,
+        YOUR_HOTMART_CLIENT_ID: !!import.meta.env.YOUR_HOTMART_CLIENT_ID,
+        YOUR_HOTMART_CLIENT_SECRET: !!import.meta.env.YOUR_HOTMART_CLIENT_SECRET,
+        YOUR_HOTMART_BASIC_TOKEN: !!import.meta.env.YOUR_HOTMART_BASIC_TOKEN,
+        YOUR_PRODUCT_ID: !!import.meta.env.YOUR_PRODUCT_ID
+      });
       return false;
     }
   }

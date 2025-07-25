@@ -5,8 +5,30 @@ import { verifyHotmartPurchase } from './hotmartApi';
 import { HOTMART_CONFIG, validateHotmartConfig } from '../config/hotmart';
 
 // 🔧 FUNÇÃO PARA TESTAR CONFIGURAÇÃO
+export const debugEnvironmentVariables = (): void => {
+  console.log('🔧 Debug das variáveis de ambiente:');
+  console.log({
+    // Mostra apenas se existem, não os valores
+    CLIENT_ID_exists: !!HOTMART_CONFIG.CLIENT_ID,
+    CLIENT_SECRET_exists: !!HOTMART_CONFIG.CLIENT_SECRET,
+    BASIC_TOKEN_exists: !!HOTMART_CONFIG.BASIC_TOKEN,
+    PRODUCT_ID_exists: !!HOTMART_CONFIG.PRODUCT_ID,
+    
+    // Mostra os primeiros caracteres para debug
+    CLIENT_ID_preview: HOTMART_CONFIG.CLIENT_ID ? HOTMART_CONFIG.CLIENT_ID.substring(0, 8) + '...' : 'não encontrado',
+    
+    // Variáveis disponíveis
+    available_env_vars: Object.keys(import.meta.env).filter(key => 
+      key.includes('HOTMART') || key.includes('PRODUCT')
+    )
+  });
+};
+
 export const testHotmartConfig = (): void => {
   console.log('🔧 Testando configuração da Hotmart...');
+  
+  // Debug das variáveis de ambiente
+  debugEnvironmentVariables();
   
   console.log('Configuração atual:', {
     CLIENT_ID: HOTMART_CONFIG.CLIENT_ID?.substring(0, 10) + '...',
@@ -20,7 +42,12 @@ export const testHotmartConfig = (): void => {
   console.log('Configuração válida:', isValid ? '✅' : '❌');
   
   if (!isValid) {
-    console.log('❌ Configure suas credenciais no arquivo .env ou src/config/hotmart.ts');
+    console.log('❌ Verifique se os GitHub Secrets estão configurados corretamente');
+    console.log('Secrets necessários:');
+    console.log('- YOUR_HOTMART_CLIENT_ID');
+    console.log('- YOUR_HOTMART_CLIENT_SECRET'); 
+    console.log('- YOUR_HOTMART_BASIC_TOKEN');
+    console.log('- YOUR_PRODUCT_ID (opcional)');
   }
 };
 

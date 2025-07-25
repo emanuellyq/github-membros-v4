@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { X, Settings, Database, Users, BookOpen, TestTube, Play, Bug, Mail, CheckCircle, AlertCircle } from 'lucide-react';
 import { isAdmin } from '../utils/adminConfig';
-import { testHotmartConfig, testEmailSearch, runAllTests } from '../utils/hotmartTest';
-import { debugEnvironmentVariables } from '../config/hotmart';
+import { testHotmartConfig, testEmailSearch, runAllTests, debugEnvironmentVariables } from '../utils/hotmartTest';
 
 interface AdminPanelProps {
   isVisible: boolean;
