@@ -45,6 +45,12 @@ interface HotmartPurchase {
 // 🔧 FUNÇÃO PARA OBTER TOKEN DE ACESSO DA HOTMART
 const getHotmartAccessToken = async (): Promise<string | null> => {
   try {
+    // 🔧 EM DESENVOLVIMENTO, RETORNAR TOKEN FAKE
+    if (import.meta.env.DEV && !HOTMART_CONFIG.CLIENT_ID) {
+      console.warn('🔧 MODO DESENVOLVIMENTO: Usando token fake');
+      return 'fake-token-for-development';
+    }
+    
     // Validar configuração antes de fazer a requisição
     if (!validateHotmartConfig()) {
       console.error('Hotmart configuration is invalid');
@@ -81,6 +87,12 @@ const getHotmartAccessToken = async (): Promise<string | null> => {
 // 🔧 FUNÇÃO PARA BUSCAR TODAS AS COMPRAS APROVADAS
 const searchApprovedPurchases = async (page: number = 1): Promise<{ purchases: HotmartPurchase[], hasMore: boolean }> => {
   try {
+    // 🔧 EM DESENVOLVIMENTO SEM CREDENCIAIS, RETORNAR DADOS FAKE
+    if (import.meta.env.DEV && !HOTMART_CONFIG.CLIENT_ID) {
+      console.warn('🔧 MODO DESENVOLVIMENTO: Retornando dados fake');
+      return { purchases: [], hasMore: false };
+    }
+    
     const accessToken = await getHotmartAccessToken();
     if (!accessToken) {
       throw new Error('Unable to get access token');

@@ -30,6 +30,15 @@ export const ACCEPTED_STATUSES = [
 
 // 🔧 FUNÇÃO PARA VALIDAR CONFIGURAÇÃO
 export const validateHotmartConfig = (): boolean => {
+  // 🔧 EM DESENVOLVIMENTO, PULAR VALIDAÇÃO SE NÃO HOUVER CREDENCIAIS
+  const isDevelopment = import.meta.env.DEV;
+  
+  if (isDevelopment) {
+    console.warn('🔧 MODO DESENVOLVIMENTO: Validação da Hotmart desabilitada');
+    console.log('Para testar com credenciais reais, crie um arquivo .env com suas credenciais');
+    return true; // Permitir funcionamento em desenvolvimento sem credenciais
+  }
+  
   const requiredFields = ['CLIENT_ID', 'CLIENT_SECRET', 'BASIC_TOKEN'];
   
   for (const field of requiredFields) {
