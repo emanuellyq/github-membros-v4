@@ -3,26 +3,14 @@
 
 export const HOTMART_CONFIG = {
   // 🔧 CREDENCIAIS DA HOTMART - Usa GitHub Secrets ou variáveis locais
-  CLIENT_ID: import.meta.env.VITE_HOTMART_CLIENT_ID || 
-             import.meta.env.YOUR_HOTMART_CLIENT_ID || 
-             process.env.YOUR_HOTMART_CLIENT_ID || 
-             '',
+  CLIENT_ID: import.meta.env.VITE_HOTMART_CLIENT_ID || '',
              
-  CLIENT_SECRET: import.meta.env.VITE_HOTMART_CLIENT_SECRET || 
-                 import.meta.env.YOUR_HOTMART_CLIENT_SECRET || 
-                 process.env.YOUR_HOTMART_CLIENT_SECRET || 
-                 '',
+  CLIENT_SECRET: import.meta.env.VITE_HOTMART_CLIENT_SECRET || '',
                  
-  BASIC_TOKEN: import.meta.env.VITE_HOTMART_BASIC_TOKEN || 
-               import.meta.env.YOUR_HOTMART_BASIC_TOKEN || 
-               process.env.YOUR_HOTMART_BASIC_TOKEN || 
-               '',
+  BASIC_TOKEN: import.meta.env.VITE_HOTMART_BASIC_TOKEN || '',
   
   // 🔧 ID DO SEU PRODUTO
-  PRODUCT_ID: import.meta.env.VITE_PRODUCT_ID || 
-              import.meta.env.YOUR_PRODUCT_ID || 
-              process.env.YOUR_PRODUCT_ID || 
-              '',
+  PRODUCT_ID: import.meta.env.VITE_PRODUCT_ID || '',
   
   // 🔧 URLs DA API
   API_BASE_URL: 'https://developers.hotmart.com',
