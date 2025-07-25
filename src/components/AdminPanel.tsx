@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Settings, Plus, Edit3, Save, X, Upload, Trash2, Eye, EyeOff, ArrowLeft, Video, MessageSquare } from 'lucide-react';
 import { BonusResource, BonusLesson, QuizQuestion } from '../types';
 import { bonusResources } from '../data/bonusData';
+import { testHotmartConfig, testEmailSearch, runAllTests } from '../utils/hotmartTest';
+import { debugEnvironmentVariables } from '../config/hotmart';
 import { OnboardingVideo, PopupContent, getOnboardingVideos, getPopupContents, saveOnboardingVideos, savePopupContents } from '../data/onboardingData';
 import { testHotmartConfig, testEmailSearch, runAllTests } from '../utils/hotmartTest';
 import { debugEnvironmentVariables } from '../config/hotmart';
@@ -19,6 +21,8 @@ export default function AdminPanel({ isVisible, onToggle, userEmail }: AdminPane
 
   if (!isVisible) {
     return (
+  const [testResults, setTestResults] = useState<string>('');
+  const [testEmail, setTestEmail] = useState('teste@teacherpoli.com');
       <button
         onClick={onToggle}
         className="fixed bottom-6 left-6 z-50 bg-red-600 hover:bg-red-700 text-white p-3 rounded-full shadow-lg transition-all"
@@ -976,6 +980,46 @@ function PopupManagement() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && editingPopup) {
+  const handleDebugEnvironment = () => {
+    console.log('🔧 Debug das variáveis de ambiente iniciado...');
+    debugEnvironmentVariables();
+    setTestResults('Debug executado! Verifique o console do navegador para detalhes.');
+  };
+
+  const handleTestConfig = async () => {
+    setTestResults('Testando configuração...');
+    try {
+      testHotmartConfig();
+      setTestResults('Teste de configuração concluído! Verifique o console para detalhes.');
+    } catch (error) {
+      setTestResults(`Erro no teste: ${error}`);
+    }
+  };
+
+  const handleTestEmail = async () => {
+    if (!testEmail) {
+      setTestResults('Digite um email para testar');
+      return;
+    }
+    
+    setTestResults(`Testando email: ${testEmail}...`);
+    try {
+      await testEmailSearch(testEmail);
+      setTestResults(`Teste concluído para ${testEmail}! Verifique o console para resultados.`);
+    } catch (error) {
+      setTestResults(`Erro no teste: ${error}`);
+    }
+  };
+
+  const handleRunAllTests = async () => {
+    setTestResults('Executando todos os testes...');
+    try {
+      await runAllTests();
+      setTestResults('Todos os testes concluídos! Verifique o console para resultados detalhados.');
+    } catch (error) {
+      setTestResults(`Erro nos testes: ${error}`);
+    }
+  };
       const imageUrl = URL.createObjectURL(file);
       setEditingPopup({ ...editingPopup, imageUrl });
     }
@@ -1089,6 +1133,7 @@ function PopupManagement() {
                     </button>
                   )}
                 </div>
+              { id: 'hotmart', label: 'Teste Hotmart' }
               ))}
               <button
                 onClick={addFeature}
@@ -1103,6 +1148,85 @@ function PopupManagement() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Imagem</label>
                 <div className="flex items-center space-x-4">
+          {/* Hotmart Test Tab */}
+          {activeTab === 'hotmart' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Testes da API Hotmart
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                  Use estas ferramentas para testar e debugar a integração com a Hotmart
+                </p>
+              </div>
+
+              {/* Test Buttons */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button
+                  onClick={handleDebugEnvironment}
+                  className="p-4 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors text-left"
+                >
+                  <h4 className="font-semibold text-blue-900 mb-2">Debug Variáveis de Ambiente</h4>
+                  <p className="text-sm text-blue-700">Verificar se as credenciais estão carregadas</p>
+                </button>
+
+                <button
+                  onClick={handleTestConfig}
+                  className="p-4 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors text-left"
+                >
+                  <h4 className="font-semibold text-green-900 mb-2">Testar Configuração</h4>
+                  <p className="text-sm text-green-700">Validar credenciais e conexão</p>
+                </button>
+
+                <button
+                  onClick={handleRunAllTests}
+                  className="p-4 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors text-left"
+                >
+                  <h4 className="font-semibold text-purple-900 mb-2">Executar Todos os Testes</h4>
+                  <p className="text-sm text-purple-700">Teste completo da integração</p>
+                </button>
+              </div>
+
+              {/* Email Test */}
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Testar Email Específico</h4>
+                <div className="flex space-x-3">
+                  <input
+                    type="email"
+                    value={testEmail}
+                    onChange={(e) => setTestEmail(e.target.value)}
+                    placeholder="Digite um email para testar"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <button
+                    onClick={handleTestEmail}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Testar
+                  </button>
+                </div>
+              </div>
+
+              {/* Test Results */}
+              {testResults && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-yellow-900 mb-2">Resultados do Teste</h4>
+                  <p className="text-yellow-800 whitespace-pre-wrap">{testResults}</p>
+                </div>
+              )}
+
+              {/* Instructions */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-900 mb-2">Instruções</h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• Abra o console do navegador (F12) para ver logs detalhados</li>
+                  <li>• Verifique se os GitHub Secrets estão configurados corretamente</li>
+                  <li>• Use emails reais de compradores para testar a busca</li>
+                  <li>• Em caso de erro, verifique as credenciais da Hotmart</li>
+                </ul>
+              </div>
+            </div>
+          )}
                   {editingPopup.imageUrl && (
                     <img 
                       src={editingPopup.imageUrl} 
