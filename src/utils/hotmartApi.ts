@@ -46,7 +46,7 @@ const HOTMART_CONFIG = {
   CLIENT_SECRET: 'your_hotmart_client_secret',
   BASIC_TOKEN: 'your_hotmart_basic_token',
   PRODUCT_ID: 'your_product_id',
-  API_BASE_URL: 'https://api-sec-vlc.hotmart.com'
+  API_BASE_URL: 'https://developers.hotmart.com/payments/api/v1/sales/history'
 };
 
 // 🔧 FUNÇÃO PARA OBTER TOKEN DE ACESSO DA HOTMART
