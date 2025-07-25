@@ -3,6 +3,7 @@ import { Settings, Plus, Edit3, Save, X, Upload, Trash2, Eye, EyeOff, ArrowLeft,
 import { BonusResource, BonusLesson, QuizQuestion } from '../types';
 import { bonusResources } from '../data/bonusData';
 import { OnboardingVideo, PopupContent, getOnboardingVideos, getPopupContents, saveOnboardingVideos, savePopupContents } from '../data/onboardingData';
+import { testHotmartConfig, testEmailSearch, runAllTests } from '../utils/hotmartTest';
 
 interface AdminPanelProps {
   isVisible: boolean;
@@ -11,7 +12,7 @@ interface AdminPanelProps {
 }
 
 export default function AdminPanel({ isVisible, onToggle, userEmail }: AdminPanelProps) {
-  const [activeTab, setActiveTab] = useState<'bonuses' | 'lessons' | 'exercises' | 'onboarding' | 'popups'>('bonuses');
+  const [activeTab, setActiveTab] = useState<'bonuses' | 'lessons' | 'exercises' | 'onboarding' | 'popups' | 'hotmart'>('bonuses');
   const [editingItem, setEditingItem] = useState<any>(null);
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -55,7 +56,8 @@ export default function AdminPanel({ isVisible, onToggle, userEmail }: AdminPane
               { id: 'lessons', label: 'Gerenciar Aulas', icon: '📚' },
               { id: 'exercises', label: 'Gerenciar Exercícios', icon: '🧠' },
               { id: 'onboarding', label: 'Comece por Aqui', icon: '🚀' },
-              { id: 'popups', label: 'Pop-ups', icon: '💬' }
+              { id: 'popups', label: 'Pop-ups', icon: '💬' },
+              { id: 'hotmart', label: 'Teste Hotmart', icon: '🔧' }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -80,6 +82,7 @@ export default function AdminPanel({ isVisible, onToggle, userEmail }: AdminPane
           {activeTab === 'exercises' && <ExerciseManagement />}
           {activeTab === 'onboarding' && <OnboardingManagement />}
           {activeTab === 'popups' && <PopupManagement />}
+          {activeTab === 'hotmart' && <HotmartTestManagement />}
         </div>
       </div>
     </div>
@@ -1184,6 +1187,131 @@ function PopupManagement() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// Componente para testar integração Hotmart
+function HotmartTestManagement() {
+  const [testEmail, setTestEmail] = useState('');
+  const [testResults, setTestResults] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const addResult = (message: string) => {
+    setTestResults(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
+  };
+
+  const handleConfigTest = () => {
+    setTestResults([]);
+    addResult('Testando configuração...');
+    
+    // Capturar logs do console
+    const originalLog = console.log;
+    console.log = (...args) => {
+      addResult(args.join(' '));
+      originalLog(...args);
+    };
+    
+    testHotmartConfig();
+    
+    // Restaurar console.log
+    console.log = originalLog;
+  };
+
+  const handleEmailTest = async () => {
+    if (!testEmail.trim()) {
+      addResult('❌ Digite um email para testar');
+      return;
+    }
+
+    setIsLoading(true);
+    setTestResults([]);
+    addResult(`Testando email: ${testEmail}`);
+
+    // Capturar logs do console
+    const originalLog = console.log;
+    const originalError = console.error;
+    
+    console.log = (...args) => {
+      addResult(args.join(' '));
+      originalLog(...args);
+    };
+    
+    console.error = (...args) => {
+      addResult(`❌ ${args.join(' ')}`);
+      originalError(...args);
+    };
+
+    try {
+      await testEmailSearch(testEmail);
+    } catch (error) {
+      addResult(`❌ Erro: ${error}`);
+    } finally {
+      // Restaurar console
+      console.log = originalLog;
+      console.error = originalError;
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <h3 className="text-lg font-semibold mb-6">Teste de Integração Hotmart</h3>
+      
+      <div className="space-y-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h4 className="font-semibold mb-4">Teste de Configuração</h4>
+          <button
+            onClick={handleConfigTest}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Testar Configuração
+          </button>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h4 className="font-semibold mb-4">Teste de Busca por Email</h4>
+          <div className="flex space-x-3 mb-4">
+            <input
+              type="email"
+              value={testEmail}
+              onChange={(e) => setTestEmail(e.target.value)}
+              placeholder="Digite um email para testar"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <button
+              onClick={handleEmailTest}
+              disabled={isLoading}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+            >
+              {isLoading ? 'Testando...' : 'Testar Email'}
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h4 className="font-semibold mb-4">Resultados dos Testes</h4>
+          <div className="bg-gray-100 rounded-lg p-4 max-h-96 overflow-y-auto">
+            {testResults.length === 0 ? (
+              <p className="text-gray-500">Nenhum teste executado ainda</p>
+            ) : (
+              <div className="space-y-1">
+                {testResults.map((result, index) => (
+                  <div key={index} className="text-sm font-mono">
+                    {result}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => setTestResults([])}
+            className="mt-3 text-gray-600 hover:text-gray-800 text-sm"
+          >
+            Limpar Resultados
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
